@@ -30,12 +30,22 @@ class DishController extends AbstractController
         $dish = new Dish();
         $form = $this->createForm(DishType::class, $dish);
         $form->handleRequest($request);
+
         if ($form->isSubmitted()) {
             $em = $doctrine->getManager();
+            $image = $request->files->get('dish')['upload'];
+
+            if($image){
+                $filename = md5(uniqid()). '.'. $image->guessClientExtension();
+            }
+
+            $image->move(
+                $this->getParameter('images_folder'),
+                $filename
+            );
+            $dish->setImage($filename);
             $em->persist($dish);
             $em->flush();
-
-            $this->addFlash('success', 'Dish was successfully deleted');
 
             return $this->redirect($this->generateUrl('dish.edit'));
         }
@@ -58,8 +68,21 @@ class DishController extends AbstractController
         $dish = $ds->find($id);
         $em->remove($dish);
         $em->flush();
+
+        $this->addFlash('success', 'Dish was successfully deleted');
+
         return $this->redirect($this->generateUrl('dish.edit'));
 
+    }
+
+    #[Route('/show/{id}', name: 'show')]
+    public function show(Dish $dish){
+
+    return $this->render('dish/show.html.twig', [
+
+        'dish' => $dish
+            
+        ]);
     }
 
 
